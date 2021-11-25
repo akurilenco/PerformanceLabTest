@@ -19,7 +19,7 @@ import java.util.List;
 public class UserService {
     @BeforeClass
     private void setUp() {
-        utils.Properties config = new Properties();
+        Properties config = new Properties();
         RestAssured.baseURI = config.getProperty("baseUrl");
     }
 
