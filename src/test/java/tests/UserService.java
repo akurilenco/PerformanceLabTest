@@ -1,21 +1,20 @@
 package tests;
 
 import controllers.UserController;
-import create_user.ErrorHandler;
 import create_user.Info;
 import create_user.InfoBuilder;
-import create_user.response.Response;
-import utils.Assertion;
-import utils.Helper;
-import utils.Properties;
 import io.qameta.allure.Description;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.testng.asserts.SoftAssert;
+import utils.Helper;
+import utils.Properties;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserService {
     @BeforeClass
@@ -65,11 +64,10 @@ public class UserService {
     public void checkCreateUser(Info info) {
         UserController userController = new UserController();
         Response response = userController.createUser(info);
-        Assertion checker = new Assertion();
-        checker.assertEquals(info.getName().toLowerCase(), response.getName().toLowerCase());
-        checker.assertEquals(info.getEmail().toLowerCase(), response.getEmail().toLowerCase());
-        checker.assertEquals(info.getHobby().toLowerCase(), response.getHobby().toLowerCase());
-        checker.assertEquals(info.getPhone(), String.valueOf(response.getPhone()));
+        Assert.assertEquals(info.getName().toLowerCase(), response.jsonPath().getString("name").toLowerCase());
+        Assert.assertEquals(info.getEmail().toLowerCase(), response.jsonPath().getString("email").toLowerCase());
+        Assert.assertEquals(info.getHobby().toLowerCase(), response.jsonPath().getString("hobby").toLowerCase());
+        Assert.assertEquals(info.getPhone(), response.jsonPath().getString("phone"));
     }
 
     @Test(dataProvider = "User info")
@@ -77,31 +75,28 @@ public class UserService {
     public void checkUserEmailExists(Info info) {
         UserController userController = new UserController();
         userController.createUser(info);
-        ErrorHandler error = userController.createUserWithError(info);
-        SoftAssert checker = new SoftAssert();
-        checker.assertEquals(error.getMessage(), "Пользователь с таким email уже существует");
+        Response error = userController.createUser(info);
+        Assert.assertEquals(error.jsonPath().getString("message"), "Пользователь с таким email уже существует ");
     }
 
     @Test(dataProvider = "User info")
     @Description("Check user name exists")
     public void checkUserNameExists(Info info) {
-        Assertion checker = new Assertion();
         Helper helper = new Helper();
         UserController userController = new UserController();
         userController.createUser(info);
         info.setEmail(helper.getRandomMail());
-        ErrorHandler error = userController.createUserWithError(info);
-        checker.assertEquals(error.getMessage(), String.format("имя %s уже есть в БД", info.getName()));
+        Response error = userController.createUser(info);
+        Assert.assertEquals(error.jsonPath().getString("message"), String.format(" имя %s уже есть в БД", info.getName()));
     }
 
     @Test(dataProvider = "User info")
     @Description("Check user name exists")
     public void checkInnLength(Info info) {
-        Assertion checker = new Assertion();
         Helper helper = new Helper();
         UserController userController = new UserController();
         info.setInn(helper.getRandomNumber(5));
-        ErrorHandler error = userController.createUserWithError(info);
-        checker.assertEquals(error.getMessage(), String.format(" Значение %s ИНН ФЛ должен содержать 12 цифр", info.getInn()));
+        Response error = userController.createUser(info);
+        Assert.assertEquals(error.jsonPath().getString("message"), String.format(" Значение %s ИНН ФЛ должен содержать 12 цифр", info.getInn()));
     }
 }
